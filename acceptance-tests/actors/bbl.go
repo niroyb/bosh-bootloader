@@ -163,6 +163,10 @@ func (b BBL) BOSHDeploymentVars() string {
 	return b.fetchValue("bosh-deployment-vars")
 }
 
+func (b BBL) CloudConfig() string {
+	return b.fetchValue("cloud-config")
+}
+
 func (b BBL) PrintEnv() string {
 	return b.fetchValue("print-env")
 }

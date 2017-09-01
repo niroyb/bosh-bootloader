@@ -14,7 +14,7 @@ import (
 	"github.com/onsi/gomega/gexec"
 )
 
-var _ = Describe("up test", func() {
+var _ = FDescribe("up test", func() {
 	var (
 		azure  actors.Azure
 		bbl    actors.BBL
@@ -45,8 +45,7 @@ var _ = Describe("up test", func() {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(exists).To(BeTrue())
 
-		// 	exists, err := azure.GetResourceGroup(fmt.Sprintf("%s-bosh", bbl.PredefinedEnvID()))
-		// 	Expect(err).NotTo(HaveOccurred())
-		// 	Expect(exists).To(BeTrue())
+		cloudConfig := bbl.CloudConfig()
+		Expect(cloudConfig).To(ContainSubstring("name: default"))
 	})
 })
