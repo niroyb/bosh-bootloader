@@ -25,8 +25,13 @@ type op struct {
 	Value interface{}
 }
 
-type cloudProperties struct {
-	ApplicationGateway string `json:"application_gateway"`
+type lb struct {
+	Name            string
+	CloudProperties lbCloudProperties `yaml:"cloud_properties"`
+}
+
+type lbCloudProperties struct {
+	ApplicationGateway string `yaml:"application_gateway"`
 }
 
 type network struct {
@@ -94,7 +99,7 @@ func (o OpsGenerator) Generate(state storage.State) (string, error) {
 		subnets = append(subnets, generateNetworkSubnet(i))
 	}
 
-	cloudConfigOps := []op{
+	ops := []op{
 		{
 			Type: "replace",
 			Path: "/networks/-",
@@ -116,17 +121,41 @@ func (o OpsGenerator) Generate(state storage.State) (string, error) {
 	}
 
 	if state.LB.Type == "cf" {
-		lbOp := op{
+		ops = append(ops,  op{
 			Type: "replace",
 			Path: "/vm_extensions/-",
-			Value: cloudProperties{
-				ApplicationGateway: "((application_gateway))",
+			Value: lb{
+				Name: "cf-router-network-properties",
+				CloudProperties: lbCloudProperties{
+					ApplicationGateway: "((application_gateway))",
+				},
 			},
-		}
-		cloudConfigOps = append(cloudConfigOps, lbOp)
+		})
+
+		ops = append(ops,  op{
+			Type: "replace",
+			Path: "/vm_extensions/-",
+			Value: lb{
+				Name: "diego-ssh-proxy-network-properties",
+				CloudProperties: lbCloudProperties{
+					ApplicationGateway: "((application_gateway))",
+				},
+			},
+		})
+
+		ops = append(ops,  op{
+			Type: "replace",
+			Path: "/vm_extensions/-",
+			Value: lb{
+				Name: "cf-tcp-router-network-properties",
+				CloudProperties: lbCloudProperties{
+					ApplicationGateway: "((application_gateway))",
+				},
+			},
+		})
 	}
 
-	cloudConfigOpsYAML, err := marshal(cloudConfigOps)
+	cloudConfigOpsYAML, err := marshal(ops)
 	if err != nil {
 		return "", err
 	}
