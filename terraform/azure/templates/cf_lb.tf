@@ -11,6 +11,13 @@ resource "azurerm_subnet" "cf-sn" {
   virtual_network_name = "${azurerm_virtual_network.bosh.name}"
 }
 
+resource "azurerm_subnet" "lb-sn" {
+  name                 = "${var.env_id}-lb-sn"
+  address_prefix       = "10.0.1.0/24"
+  resource_group_name  = "${azurerm_resource_group.bosh.name}"
+  virtual_network_name = "${azurerm_virtual_network.bosh.name}"
+}
+
 resource "azurerm_public_ip" "lb" {
   name                         = "${var.env_id}-cf-lb-ip"
   location                     = "${var.region}"
@@ -41,7 +48,7 @@ resource "azurerm_application_gateway" "network" {
 
   gateway_ip_configuration {
     name      = "${var.env_id}-cf-gateway-ip-configuration"
-    subnet_id = "${azurerm_virtual_network.bosh.id}/subnets/${azurerm_subnet.cf-sn.name}"
+    subnet_id = "${azurerm_virtual_network.bosh.id}/subnets/${azurerm_subnet.lb-sn.name}"
   }
 
   frontend_port {

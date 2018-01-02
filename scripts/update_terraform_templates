@@ -1,4 +1,12 @@
-#!/bin/bash -exu
+#!/bin/bash
+
+if [ $# == 0 ]; then
+  echo "Missing argument" 1>&2
+  echo "Usage: '$0 [aws|azure|gcp]'" 1>&2
+  exit 1
+fi
+
+set -exu
 
 if [ "${@}" == "aws" ]; then
   pushd terraform/aws
