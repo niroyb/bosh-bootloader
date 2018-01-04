@@ -39,7 +39,7 @@ resource "azurerm_application_gateway" "network" {
   probe {
     name                = "Probe01"
     protocol            = "Http"
-    path                = "/login"
+    path                = "/"
     host                = "login.${var.system_domain}"
     interval            = 60
     timeout             = 60
