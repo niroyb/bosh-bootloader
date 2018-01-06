@@ -6,14 +6,7 @@ variable "pfx_password" {}
 
 resource "azurerm_subnet" "cf-sn" {
   name                 = "${var.env_id}-cf-sn"
-  address_prefix       = "10.0.16.0/20"
-  resource_group_name  = "${azurerm_resource_group.bosh.name}"
-  virtual_network_name = "${azurerm_virtual_network.bosh.name}"
-}
-
-resource "azurerm_subnet" "lb-sn" {
-  name                 = "${var.env_id}-lb-sn"
-  address_prefix       = "10.0.1.0/24"
+  address_prefix       = "${cidrsubnet(var.network_cidr, 8, 1)}"
   resource_group_name  = "${azurerm_resource_group.bosh.name}"
   virtual_network_name = "${azurerm_virtual_network.bosh.name}"
 }
@@ -48,12 +41,17 @@ resource "azurerm_application_gateway" "network" {
 
   gateway_ip_configuration {
     name      = "${var.env_id}-cf-gateway-ip-configuration"
-    subnet_id = "${azurerm_virtual_network.bosh.id}/subnets/${azurerm_subnet.lb-sn.name}"
+    subnet_id = "${azurerm_virtual_network.bosh.id}/subnets/${azurerm_subnet.cf-sn.name}"
   }
 
   frontend_port {
     name = "frontendporthttps"
     port = 443
+  }
+
+   frontend_port {
+    name = "frontendporthttp"
+    port = 80
   }
 
   frontend_port {
@@ -88,15 +86,46 @@ resource "azurerm_application_gateway" "network" {
   http_listener {
     name                           = "${azurerm_virtual_network.bosh.name}-httplstn"
     frontend_ip_configuration_name = "${var.env_id}-cf-frontend-ip-configuration"
+    frontend_port_name             = "frontendporthttp"
+    protocol                       = "Http"
+  }
+
+  http_listener {
+    name                           = "${azurerm_virtual_network.bosh.name}-httpslstn"
+    frontend_ip_configuration_name = "${var.env_id}-cf-frontend-ip-configuration"
     frontend_port_name             = "frontendporthttps"
     protocol                       = "Https"
     ssl_certificate_name           = "ssl-cert"
   }
 
+  http_listener {
+    name                           = "${azurerm_virtual_network.bosh.name}-logslstn"
+    frontend_ip_configuration_name = "${var.env_id}-cf-frontend-ip-configuration"
+    frontend_port_name             = "frontendportlogs"
+    protocol                       = "Https"
+    ssl_certificate_name           = "ssl-cert"
+  }
+
   request_routing_rule {
-    name                       = "${azurerm_virtual_network.bosh.name}-rqrt"
+    name                       = "${azurerm_virtual_network.bosh.name}-httpRule"
     rule_type                  = "Basic"
     http_listener_name         = "${azurerm_virtual_network.bosh.name}-httplstn"
+    backend_address_pool_name  = "${var.env_id}-cf-backend-address-pool"
+    backend_http_settings_name = "${azurerm_virtual_network.bosh.name}-be-htst"
+  }
+
+  request_routing_rule {
+    name                       = "${azurerm_virtual_network.bosh.name}-httpsRule"
+    rule_type                  = "Basic"
+    http_listener_name         = "${azurerm_virtual_network.bosh.name}-httpslstn"
+    backend_address_pool_name  = "${var.env_id}-cf-backend-address-pool"
+    backend_http_settings_name = "${azurerm_virtual_network.bosh.name}-be-htst"
+  }
+
+  request_routing_rule {
+    name                       = "${azurerm_virtual_network.bosh.name}-logRule"
+    rule_type                  = "Basic"
+    http_listener_name         = "${azurerm_virtual_network.bosh.name}-logslstn"
     backend_address_pool_name  = "${var.env_id}-cf-backend-address-pool"
     backend_http_settings_name = "${azurerm_virtual_network.bosh.name}-be-htst"
   }
